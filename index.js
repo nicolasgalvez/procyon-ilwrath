@@ -119,7 +119,7 @@ async function checkPage(page, csvWriter, baseUrl, url, rateLimit) {
  * @returns {Promise<void>}
  */
 const run = async (baseUrl, csvPath, rateLimit) => {
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({headless: "new"});
     const page = await browser.newPage();
 
     const csvWriter = createCsvWriter({
