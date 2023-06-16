@@ -22,21 +22,79 @@ const argv = yargs(hideBin(process.argv))
         type: 'number',
         description: 'Set the rate limit (in milliseconds)',
         default: 1000,  // 1 second by default
-    })
-    .argv;
+    })  .option('verbose', {
+        alias: 'v',
+        type: 'boolean',
+        description: 'Run with verbose logging',
+    }).argv;
+
+/**
+ * Log a message if verbose logging is enabled
+ * @param message
+ */
+const log = (message) => {
+    if (argv.verbose) {
+        console.log(message);
+    }
+}
 
 // Set to keep track of visited URLs
 const visitedUrls = new Set();
 
+/**
+ * Patterns to skip
+ * @type {RegExp[]}
+ */
+const skipPatterns = [
+    /\/wp-content/,
+    /\/wp-admin/,
+    /#/,
+    /\.(pdf|png|jpg|jpeg|gif|css|js)$/i
+];
+
+/**
+ * Check if URL should be skipped
+ * @param url
+ * @returns {boolean}
+ */
+function shouldSkipURL(url) {
+    return skipPatterns.some(pattern => pattern.test(url));
+}
+
+/**
+ * Check a page recursively
+ * @param page
+ * @param csvWriter
+ * @param baseUrl
+ * @param url
+ * @param rateLimit
+ * @returns {Promise<void>}
+ */
 async function checkPage(page, csvWriter, baseUrl, url, rateLimit) {
+    // Skip if URL has already been visited
     if (visitedUrls.has(url)) {
+        console.log('Skipping duplicate:', url);
         return;  // skip if URL has already been visited
     }
-
+    // Skip if URL matches a pattern
+    if (shouldSkipURL(url)) {
+        console.log('Skipping URL:', url);
+        return;
+    }
     visitedUrls.add(url);  // mark URL as visited
 
     const response = await page.goto(url);
+    
+    if (response === null) {
+        log(`No response for URL ${url}`);
 
+        // Write to CSV
+        await csvWriter.writeRecords([{ url: url, status: '' }]);
+        
+        return;
+    }
+    log(`Status for URL ${url}: ${response.status()}`);
+    
     // Write to CSV
     await csvWriter.writeRecords([{ url: url, status: response.status() }]);
 
@@ -53,6 +111,13 @@ async function checkPage(page, csvWriter, baseUrl, url, rateLimit) {
     }
 }
 
+/**
+ * Run the crawler
+ * @param baseUrl
+ * @param csvPath
+ * @param rateLimit
+ * @returns {Promise<void>}
+ */
 const run = async (baseUrl, csvPath, rateLimit) => {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
