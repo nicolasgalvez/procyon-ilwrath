@@ -1,5 +1,6 @@
 {
-  "name": "procyon-ilwrath-crawl",
+  "name": "procyon-crawl",
+  "type": "procyon-crawl",
   "version": "1.0.1",
   "description": "A Node.js script that uses Puppeteer to crawl a website and record the status codes of each visited URL",
   "main": "index.js",
@@ -7,7 +8,7 @@
     "start": "node index.js"
   },
   "bin": {
-    "ilwrath-crawl": "./index.js"
+    "procyon-crawl": "./index.js"
   },
   "keywords": [],
   "author": "",
